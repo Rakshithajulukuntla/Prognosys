@@ -1,0 +1,372 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------
+// ENUMS (Defined in Extensions & Refactors)
+// ---------------------------------------------------------
+
+enum UserRole {
+  ADMIN
+  SENIOR_ENGINEER
+  JUNIOR_ENGINEER
+  STAFF
+}
+
+enum PaymentStatus {
+  Pending
+  Paid
+  Overdue
+}
+
+enum AssetStatus {
+  Available
+  InUse
+}
+
+// ---------------------------------------------------------
+// 1. MASTER & USER SYSTEM (Refactored)
+// ---------------------------------------------------------
+
+model Customer {
+  id        BigInt   @id @default(autoincrement()) @map("customer_id")
+  name      String   @unique @map("customer_name") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+  jobs      Job[]
+
+  @@map("customers")
+}
+
+// Refactored from 'engineers' to 'User' for Admin/Auth support
+model User {
+  id           BigInt   @id @default(autoincrement()) @map("user_id")
+  name         String   @map("name") @db.VarChar(100)
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  jobAssignments    JobEngineer[]
+  submittedExpenses JobExpense[]
+  expenseShares     JobExpenseEngineer[]
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------
+// 2. LOOKUP TABLES
+// ---------------------------------------------------------
+
+model JobWorkStatus {
+  id          Int      @id @default(autoincrement()) @map("work_status_id")
+  code        String   @unique @map("work_status_code") @db.VarChar(50)
+  name        String   @map("work_status_name") @db.VarChar(100)
+  statusOrder Int      @map("status_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  jobs        Job[]
+
+  @@map("job_work_status")
+}
+
+model JobReportStatus {
+  id          Int      @id @default(autoincrement()) @map("report_status_id")
+  code        String   @unique @map("report_status_code") @db.VarChar(50)
+  name        String   @map("report_status_name") @db.VarChar(100)
+  statusOrder Int      @map("status_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  jobs        Job[]
+
+  @@map("job_report_status")
+}
+
+model PowerPlantType {
+  id          Int      @id @default(autoincrement()) @map("power_plant_type_id")
+  code        String   @unique @map("power_plant_type_code") @db.VarChar(50)
+  name        String   @map("power_plant_type_name") @db.VarChar(100)
+  statusOrder Int      @map("status_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  jobs        Job[]
+
+  @@map("power_plant_type")
+}
+
+model PlannedTest {
+  id          Int              @id @default(autoincrement()) @map("planned_test_id")
+  code        String           @unique @map("planned_test_code") @db.VarChar(50)
+  name        String           @map("planned_test_name") @db.VarChar(150)
+  statusOrder Int              @map("status_order")
+  isActive    Boolean          @default(true) @map("is_active")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  jobTests    JobPlannedTest[]
+
+  @@map("planned_tests")
+}
+
+model TransportMode {
+  id          Int      @id @default(autoincrement()) @map("transport_mode_id")
+  code        String   @unique @map("transport_mode_code") @db.VarChar(50)
+  name        String   @map("transport_mode_name") @db.VarChar(150)
+  statusOrder Int      @map("status_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  jobs        Job[]
+
+  @@map("transport_mode")
+}
+
+model VehicleDetail {
+  id          Int      @id @default(autoincrement()) @map("vehicle_detail_id")
+  rtaNumber   String   @unique @map("vehicle_rta_number") @db.VarChar(50)
+  name        String   @map("vehicle_detail_name") @db.VarChar(150)
+  statusOrder Int      @map("status_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  jobs        Job[]
+
+  @@map("vehicle_details")
+}
+
+model DriverAccompanied {
+  id          Int      @id @default(autoincrement()) @map("driver_accompanied_id")
+  code        String   @unique @map("driver_accompanied_code") @db.VarChar(50)
+  name        String   @map("driver_accompanied_name") @db.VarChar(100)
+  statusOrder Int      @map("status_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  jobs        Job[]
+
+  @@map("driver_accompanied")
+}
+
+model ExpenseType {
+  id          Int          @id @default(autoincrement()) @map("expense_type_id")
+  code        String       @unique @map("expense_type_code") @db.VarChar(50)
+  name        String       @map("expense_type_name") @db.VarChar(150)
+  statusOrder Int          @map("status_order")
+  isActive    Boolean      @default(true) @map("is_active")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  expenses    JobExpense[]
+
+  @@map("expense_type")
+}
+
+model ExpensePaymentStatus {
+  id          Int          @id @default(autoincrement()) @map("expense_payment_status_id")
+  code        String       @unique @map("expense_payment_status_code") @db.VarChar(50)
+  name        String       @map("expense_payment_status_name") @db.VarChar(100)
+  statusOrder Int          @map("status_order")
+  isActive    Boolean      @default(true) @map("is_active")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  expenses    JobExpense[]
+
+  @@map("expense_payment_status")
+}
+
+// ---------------------------------------------------------
+// 3. CORE TABLES
+// ---------------------------------------------------------
+
+model Job {
+  id                  BigInt    @id @default(autoincrement()) @map("job_id")
+  jobNo               Int       @unique @map("job_no")
+  customerId          BigInt    @map("customer_id")
+  jobType             String    @map("job_type") @db.VarChar(100)
+  jobSite             String    @map("job_site") @db.VarChar(100)
+  jobState            String    @map("job_state") @db.VarChar(100)
+  jobCountry          String    @map("job_country") @db.VarChar(100)
+  transportModeId     Int       @map("transport_mode_id")
+  vehicleDetailId     Int?      @map("vehicle_detail_id")
+  driverAccompaniedId Int?      @map("driver_accompanied_id")
+  powerPlantTypeId    Int?      @map("power_plant_type_id")
+  jobActivity         String?   @map("job_activity") @db.VarChar(500)
+  workStatusId        Int       @map("job_work_status_id")
+  reportStatusId      Int       @map("job_report_status_id")
+  jobStartDate        DateTime  @map("job_start_date")
+  jobEndDate          DateTime? @map("job_end_date")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // Foreign Keys
+  customer          Customer           @relation(fields: [customerId], references: [id])
+  transportMode     TransportMode      @relation(fields: [transportModeId], references: [id])
+  vehicleDetail     VehicleDetail?     @relation(fields: [vehicleDetailId], references: [id])
+  driverAccompanied DriverAccompanied? @relation(fields: [driverAccompaniedId], references: [id])
+  powerPlantType    PowerPlantType?    @relation(fields: [powerPlantTypeId], references: [id])
+  workStatus        JobWorkStatus      @relation(fields: [workStatusId], references: [id])
+  reportStatus      JobReportStatus    @relation(fields: [reportStatusId], references: [id])
+
+  // Relations
+  engineers    JobEngineer[]
+  plannedTests JobPlannedTest[]
+  documents    JobDocument[]
+  expenses     JobExpense[]
+
+  // Extension Modules
+  financials JobFinancials?
+  assets     Asset[]
+
+  @@index([customerId], name: "idx_jobs_customer")
+  @@index([workStatusId], name: "idx_jobs_work_status")
+  @@index([reportStatusId], name: "idx_jobs_report_status")
+  @@map("jobs")
+}
+
+// Explicit M:N Join Table for Job <-> User (Engineers)
+model JobEngineer {
+  jobNo  Int    @map("job_no")
+  userId BigInt @map("engineer_id")
+
+  job  Job  @relation(fields: [jobNo], references: [jobNo], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([jobNo, userId])
+  @@map("job_engineers")
+}
+
+// Explicit M:N Join Table for Job <-> PlannedTest
+model JobPlannedTest {
+  jobNo         Int @map("job_no")
+  plannedTestId Int @map("planned_test_id")
+
+  job         Job         @relation(fields: [jobNo], references: [jobNo], onDelete: Cascade)
+  plannedTest PlannedTest @relation(fields: [plannedTestId], references: [id])
+
+  @@id([jobNo, plannedTestId])
+  @@map("job_planned_tests")
+}
+
+model JobDocument {
+  id           BigInt   @id @default(autoincrement()) @map("document_id")
+  jobNo        Int      @map("job_no")
+  documentType String   @map("document_type") @db.VarChar(50)
+  fileName     String?  @map("file_name") @db.VarChar(255)
+  filePath     String?  @map("file_path") @db.VarChar(500)
+  uploadedAt   DateTime @default(now()) @map("uploaded_at")
+
+  job Job @relation(fields: [jobNo], references: [jobNo], onDelete: Cascade)
+
+  @@map("job_documents")
+}
+
+// ---------------------------------------------------------
+// 4. EXPENSES
+// ---------------------------------------------------------
+
+model JobExpense {
+  id              BigInt    @id @default(autoincrement()) @map("expense_id")
+  jobNo           Int       @map("job_no")
+  expenseTypeId   Int       @map("expense_type_id")
+  paymentStatusId Int       @map("expense_payment_status_id")
+  amount          Decimal?  @map("expense_amount") @db.Decimal(10, 2)
+  expenseDate     DateTime? @map("expense_date")
+  submittedById   BigInt    @map("expense_submitted_by_engineer_id")
+  expenseDocs     Bytes?    @map("expense_docs") @db.ByteA // mapped from MEDIUMBLOB
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  job           Job                  @relation(fields: [jobNo], references: [jobNo], onDelete: Cascade)
+  expenseType   ExpenseType          @relation(fields: [expenseTypeId], references: [id])
+  paymentStatus ExpensePaymentStatus @relation(fields: [paymentStatusId], references: [id])
+  submittedBy   User                 @relation(fields: [submittedById], references: [id])
+
+  sharedWithEngineers JobExpenseEngineer[]
+
+  @@index([jobNo], name: "idx_job_expenses_job_no")
+  @@index([paymentStatusId], name: "idx_job_expenses_status")
+  @@map("job_expenses")
+}
+
+// Explicit M:N Join Table for Expense <-> User (Engineers)
+model JobExpenseEngineer {
+  expenseId BigInt @map("expense_id")
+  userId    BigInt @map("engineer_id")
+
+  expense JobExpense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    User       @relation(fields: [userId], references: [id])
+
+  @@id([expenseId, userId])
+  @@map("job_expense_engineers")
+}
+
+// ---------------------------------------------------------
+// 5. EXTENSIONS (New Modules)
+// ---------------------------------------------------------
+
+// Module: JobFinancials (One-to-One with Job)
+model JobFinancials {
+  id             BigInt        @id @default(autoincrement())
+  jobId          BigInt        @unique // FK to Job.id (BigInt PK)
+  invoiceNumber  String
+  invoiceDate    DateTime
+  paymentDueDate DateTime
+  paymentDate    DateTime?
+  netAmount      Decimal       @db.Decimal(10, 2)
+  gstAmount      Decimal       @db.Decimal(10, 2)
+  grossAmount    Decimal       @db.Decimal(10, 2)
+  paymentStatus  PaymentStatus
+
+  job Job @relation(fields: [jobId], references: [id])
+
+  @@map("job_financials")
+}
+
+// Module: Asset (Asset Summary Report)
+model Asset {
+  assetNumber     String      @id @map("asset_number")
+  assetType       String      @map("asset_type")
+  status          AssetStatus
+  currentLocation String      @map("current_location")
+  jobId           BigInt?     @map("job_id") // Nullable link to Job
+
+  job Job? @relation(fields: [jobId], references: [id])
+
+  @@map("assets")
+}
+
+// ---------------------------------------------------------
+// 6. AUDIT & HISTORY (System Tables)
+// ---------------------------------------------------------
+
+model AuditLog {
+  id          BigInt   @id @default(autoincrement()) @map("audit_id")
+  tableName   String   @map("table_name") @db.VarChar(64)
+  operation   String   @map("operation") // ENUM('INSERT','UPDATE','DELETE') in SQL
+  businessKey String?  @map("business_key") @db.VarChar(100)
+  recordPk    String?  @map("record_pk") @db.VarChar(100)
+  oldData     Json?    @map("old_data")
+  newData     Json?    @map("new_data")
+  changedBy   String   @map("changed_by") @db.VarChar(100)
+  changedAt   DateTime @default(now()) @map("changed_at")
+
+  @@index([tableName], name: "idx_audit_table")
+  @@index([businessKey], name: "idx_audit_business_key")
+  @@index([changedAt], name: "idx_audit_changed_at")
+  @@map("audit_log")
+}
+
+model EntityHistory {
+  id           BigInt   @id @default(autoincrement()) @map("history_id")
+  tableName    String   @map("table_name") @db.VarChar(64)
+  businessKey  String?  @map("business_key") @db.VarChar(100)
+  recordPk     String   @map("record_pk") @db.VarChar(100)
+  snapshotData Json     @map("snapshot_data")
+  operation    String   @map("operation")
+  changedBy    String   @map("changed_by") @db.VarChar(100)
+  changedAt    DateTime @default(now()) @map("changed_at")
+
+  @@index([tableName], name: "idx_history_table")
+  @@index([businessKey], name: "idx_history_business_key")
+  @@index([changedAt], name: "idx_history_changed_at")
+  @@map("entity_history")
+}
